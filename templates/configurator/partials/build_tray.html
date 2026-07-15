@@ -1,0 +1,50 @@
+<div id="build-tray" class="build-tray"{% if oob %} hx-swap-oob="true"{% endif %}>
+    {% if error %}
+    <p class="tray-error">{{ error }}</p>
+    {% endif %}
+
+    <div
+        class="bracelet-circle{% if not tray_items %} bracelet-circle--empty{% endif %}"
+        style="--slots: {{ total_slots|default:0 }};"
+    >
+        {% with total=tray_items|length %}
+        {% for entry in tray_items %}
+        <div
+            class="tray-item slot-{{ entry.item.slot_width }}"
+            style="--angle: {% widthratio forloop.counter0 total 360 %}deg; --z: {{ forloop.counter0 }};"
+        >
+            <img src="{{ entry.item.image.url }}" alt="{{ entry.item.name }}">
+            <button
+                type="button"
+                class="tray-item-remove"
+                hx-post="{% url 'configurator:remove_bracelet_item' %}"
+                hx-vals='{"position": "{{ entry.position }}"}'
+                hx-target="#build-tray"
+                hx-swap="outerHTML"
+                aria-label="Remove {{ entry.item.name }}"
+            >&times;</button>
+        </div>
+        {% empty %}
+        {% if total_slots %}
+        {% for _ in ""|ljust:total_slots %}
+        <div class="tray-placeholder" style="--angle: {% widthratio forloop.counter0 total_slots 360 %}deg;"></div>
+        {% endfor %}
+        {% endif %}
+        <p class="tray-empty">No items added yet.</p>
+        {% endfor %}
+        {% endwith %}
+    </div>
+
+    {% if total_slots and used_slots == total_slots %}
+    <p class="tray-complete">Your bracelet is complete!</p>
+    {% endif %}
+
+    <div class="tray-summary">
+        <span class="tray-slots">{{ used_slots }} / {{ total_slots }} slots used</span>
+        <span class="tray-price">${{ total_price }}</span>
+    </div>
+
+    {% if tray_items %}
+    <a class="tray-checkout-link" href="{% url 'configurator:checkout' %}">Checkout</a>
+    {% endif %}
+</div>

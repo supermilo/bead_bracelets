@@ -1,0 +1,24 @@
+<div id="size-selector" class="size-selector">
+    {% if error %}
+    <p class="size-selector-error">{{ error }}</p>
+    {% endif %}
+
+    {% if not base %}
+    <p class="size-selector-prompt">Choose a bracelet size to begin.</p>
+    {% endif %}
+
+    <div class="size-options">
+        {% for option in bases %}
+        <button
+            type="button"
+            class="size-option{% if base and option.id == base.id %} size-option--selected{% endif %}"
+            hx-post="{% url 'configurator:select_bracelet_base' %}"
+            hx-vals='{"base_id": "{{ option.id }}"}'
+            hx-target="#size-selector"
+            hx-swap="outerHTML"
+        >{{ option.name }} ({{ option.total_slots }} slots)</button>
+        {% empty %}
+        <p>No bracelet sizes available yet.</p>
+        {% endfor %}
+    </div>
+</div>

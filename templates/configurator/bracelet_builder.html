@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}Bracelet Builder{% endblock %}
+
+{% block content %}
+<h1>Bracelet Builder</h1>
+
+{% include "configurator/partials/size_selector.html" %}
+
+<div class="category-selector">
+    {% for category in categories %}
+    <button
+        type="button"
+        hx-get="{% url 'configurator:bracelet_item_carousel' %}?category={{ category.slug }}"
+        hx-target="#item-carousel"
+        hx-swap="innerHTML"
+    >{{ category.name }}</button>
+    {% endfor %}
+</div>
+
+<div id="bracelet-swiper" class="swiper">
+    <div id="item-carousel" class="swiper-wrapper"></div>
+    <div class="swiper-button-prev"></div>
+    <div class="swiper-button-next"></div>
+    <div class="swiper-pagination"></div>
+</div>
+
+{% include "configurator/partials/build_tray.html" %}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    #bracelet-swiper {
+        padding-bottom: 40px;
+    }
+
+    .swiper-slide {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: auto;
+        text-align: center;
+    }
+
+    .swiper-slide img {
+        width: 200px;
+        height: 200px;
+        max-width: 200px;
+        max-height: 200px;
+        object-fit: cover;
+        display: block;
+        border-radius: 4px;
+    }
+
+    .swiper-slide .item-name,
+    .swiper-slide .item-material,
+    .swiper-slide .item-price {
+        margin: 4px 0 0;
+    }
+
+    .item-stock {
+        margin: 4px 0 0;
+        font-size: 0.85em;
+        font-weight: 600;
+    }
+
+    .item-stock--low {
+        color: #856404;
+    }
+
+    .item-stock--out {
+        color: #b00020;
+    }
+
+    .swiper-slide button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .size-selector {
+        margin-bottom: 16px;
+    }
+
+    .size-selector-prompt {
+        color: #856404;
+        background: #fff3cd;
+        border: 1px solid #ffeeba;
+        border-radius: 4px;
+        padding: 8px 12px;
+        margin: 0 0 12px;
+    }
+
+    .size-selector-error {
+        color: #b00020;
+        margin: 0 0 12px;
+    }
+
+    .size-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .size-option {
+        padding: 8px 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #fff;
+        cursor: pointer;
+    }
+
+    .size-option--selected {
+        background: #222;
+        color: #fff;
+        border-color: #222;
+    }
+
+    .build-tray {
+        margin-top: 24px;
+        border-top: 1px solid #ddd;
+        padding-top: 16px;
+    }
+
+    .tray-error {
+        color: #b00020;
+        margin: 0 0 12px;
+    }
+
+    .bracelet-circle {
+        position: relative;
+        width: clamp(320px, calc(320px + var(--slots, 0) * 3px), 420px);
+        height: clamp(320px, calc(320px + var(--slots, 0) * 3px), 420px);
+        max-width: 100%;
+        margin: 16px auto;
+        border-radius: 50%;
+        border: 2px solid #bbb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        --radius: clamp(70px, calc(70px + var(--slots, 0) * 3px), 170px);
+    }
+
+    .bracelet-circle--empty {
+        border-style: dashed;
+        border-color: #ddd;
+    }
+
+    .tray-item {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 48px;
+        height: 48px;
+        margin-top: -24px;
+        margin-left: -24px;
+        transform: rotate(var(--angle)) translate(var(--radius)) rotate(calc(-1 * var(--angle)));
+        z-index: var(--z, 0);
+    }
+
+    .tray-item:hover,
+    .tray-item:focus-within {
+        z-index: 100;
+    }
+
+    .tray-item img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .tray-item.slot-2 { width: 72px; height: 72px; margin-top: -36px; margin-left: -36px; }
+    .tray-item.slot-3 { width: 96px; height: 96px; margin-top: -48px; margin-left: -48px; }
+    .tray-item.slot-4 { width: 120px; height: 120px; margin-top: -60px; margin-left: -60px; }
+
+    .tray-placeholder {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        margin-top: -10px;
+        margin-left: -10px;
+        border: 1.5px dashed #ccc;
+        border-radius: 50%;
+        transform: rotate(var(--angle)) translate(var(--radius)) rotate(calc(-1 * var(--angle)));
+    }
+
+    .tray-item-remove {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        width: 18px;
+        height: 18px;
+        line-height: 16px;
+        padding: 0;
+        border-radius: 50%;
+        border: none;
+        background: #333;
+        color: #fff;
+        font-size: 12px;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+
+    .tray-item:hover .tray-item-remove,
+    .tray-item:focus-within .tray-item-remove {
+        opacity: 1;
+    }
+
+    .tray-empty {
+        color: #888;
+        margin: 0;
+        text-align: center;
+        padding: 0 32px;
+    }
+
+    .tray-complete {
+        color: #155724;
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 4px;
+        padding: 8px 12px;
+        margin: 12px 0 0;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .tray-summary {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 12px;
+        font-weight: 600;
+    }
+
+    .tray-checkout-link {
+        display: block;
+        margin-top: 16px;
+        padding: 12px 16px;
+        text-align: center;
+        background: #222;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        let swiperInstance = null;
+
+        function initSwiper() {
+            if (swiperInstance) {
+                swiperInstance.destroy(true, true);
+                swiperInstance = null;
+            }
+            swiperInstance = new Swiper('#bracelet-swiper', {
+                slidesPerView: 'auto',
+                spaceBetween: 12,
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initSwiper);
+
+        document.body.addEventListener('htmx:afterSwap', function (evt) {
+            if (evt.detail.target.id === 'item-carousel') {
+                initSwiper();
+            }
+        });
+    })();
+</script>
+{% endblock %}

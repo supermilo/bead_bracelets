@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Choose Payment Method{% endblock %}
+
+{% block content %}
+<h1>Choose a payment method</h1>
+
+<p>Order {{ order.order_number }} — Total: <strong>${{ order.total }} {{ order.currency }}</strong></p>
+
+{% if error %}
+<p class="gateway-error">{{ error }}</p>
+{% endif %}
+
+<div class="gateway-options">
+    <form method="post" action="{% url 'payment:process_payment' order.order_number %}">
+        {% csrf_token %}
+        <input type="hidden" name="gateway" value="stripe">
+        <button type="submit">Pay with Card (Stripe)</button>
+    </form>
+
+    <form method="post" action="{% url 'payment:process_payment' order.order_number %}">
+        {% csrf_token %}
+        <input type="hidden" name="gateway" value="paypal">
+        <button type="submit">Pay with PayPal</button>
+    </form>
+
+    <form method="post" action="{% url 'payment:process_payment' order.order_number %}">
+        {% csrf_token %}
+        <input type="hidden" name="gateway" value="mercadopago">
+        <button type="submit">Pay with MercadoPago</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .gateway-error { color: #b00020; }
+
+    .gateway-options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 320px;
+    }
+
+    .gateway-options button {
+        padding: 12px 16px;
+        font-size: 1rem;
+    }
+</style>
+{% endblock %}

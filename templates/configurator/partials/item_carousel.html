@@ -1,0 +1,24 @@
+{% for item in items %}
+<div class="swiper-slide" data-item-id="{{ item.id }}">
+    <img src="{{ item.image.url }}" alt="{{ item.name }}">
+    <p class="item-name">{{ item.name }}</p>
+    <p class="item-material">{{ item.material }}</p>
+    <p class="item-price">${{ item.price }}</p>
+    {% if item.remaining_stock <= 0 %}
+    <p class="item-stock item-stock--out">Out of stock</p>
+    {% elif item.remaining_stock <= 3 %}
+    <p class="item-stock item-stock--low">Only {{ item.remaining_stock }} left</p>
+    {% endif %}
+    <button
+        type="button"
+        hx-post="{% url 'configurator:add_bracelet_item' %}"
+        hx-vals='{"item_id": "{{ item.id }}"}'
+        hx-target="#build-tray"
+        hx-swap="outerHTML"
+        data-item-id="{{ item.id }}"
+        {% if not has_base or item.remaining_stock <= 0 %}disabled{% endif %}
+    >Add</button>
+</div>
+{% empty %}
+<p>No items in this category.</p>
+{% endfor %}

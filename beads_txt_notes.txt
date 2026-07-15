@@ -1,0 +1,6 @@
+It's not inside the project directory — pipenv keeps virtualenvs in a central location, keyed by the project folder name + a hash.
+
+- Location: /home/milo/.local/share/virtualenvs/Beads-t0f56oqE
+- Interpreter: /home/milo/.local/share/virtualenvs/Beads-t0f56oqE/bin/python (Python 3.10.12)
+- Why "Beads": pipenv names the venv after the containing directory (/home/milo/projects/Beads) plus a hash of its full path, so it doesn't collide with other projects' venvs of the same name — the bracelet_builder name doesn't factor in since that's just the Django project subfolder, not the pipenv root.
+- Contents: Django 4.2.15 + psycopg2-binary (and their dependencies), tracked in Pipfile/Pipfile.lock at /home/milo/projects/Beads/Pipfile.

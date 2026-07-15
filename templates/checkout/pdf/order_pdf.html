@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    body { font-family: sans-serif; color: #222; font-size: 12px; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    .muted { color: #777; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #ddd; }
+    th { background: #f5f5f5; }
+    .num { text-align: right; }
+    .total-row td { font-weight: bold; border-top: 2px solid #222; border-bottom: none; }
+</style>
+</head>
+<body>
+    <h1>Order Confirmation</h1>
+    <p class="muted">Order {{ order.order_number }} &mdash; {{ order.created_at|date:"M d, Y" }}</p>
+
+    <h3>Customer</h3>
+    <p>
+        {{ order.customer_name }}<br>
+        {{ order.customer_email }}<br>
+        {% if order.customer_phone %}{{ order.customer_phone }}<br>{% endif %}
+    </p>
+
+    {% for order_item in order.items.all %}
+    <h3>{{ order_item.item_title }}</h3>
+    {% if order_item.bracelet_configuration %}
+    <table>
+        <thead>
+            <tr>
+                <th>Position</th>
+                <th>Bead</th>
+                <th>Material</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for config_item in order_item.bracelet_configuration.items.all %}
+            <tr>
+                <td>{{ config_item.position }}</td>
+                <td>{{ config_item.item.name }}</td>
+                <td>{{ config_item.item.material }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    <p class="num">${{ order_item.total_price }}</p>
+    {% endfor %}
+
+    <table>
+        <tbody>
+            <tr class="total-row">
+                <td>Total</td>
+                <td class="num">${{ order.total }} {{ order.currency }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% if payment_method %}
+    <p>Payment method: {{ payment_method|title }}</p>
+    {% endif %}
+</body>
+</html>

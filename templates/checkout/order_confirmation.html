@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmation{% endblock %}
+
+{% block content %}
+<h1>Thank you, {{ order.customer_name }}!</h1>
+
+<p class="order-status">
+    Order <strong>{{ order.order_number }}</strong> —
+    <span class="status status-{{ order.status }}">{{ order.get_status_display }}</span>
+</p>
+
+{% for order_item in order.items.all %}
+<div class="order-item">
+    <h2>{{ order_item.item_title }}</h2>
+    {% if order_item.bracelet_configuration %}
+    <ul class="bead-list">
+        {% for config_item in order_item.bracelet_configuration.items.all %}
+        <li>
+            <span class="bead-position">#{{ config_item.position }}</span>
+            {{ config_item.item.name }} — {{ config_item.item.material }}
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    <p class="order-item-total">${{ order_item.total_price }}</p>
+</div>
+{% endfor %}
+
+<p class="order-total">Total: <strong>${{ order.total }} {{ order.currency }}</strong></p>
+
+<p>A confirmation email with your receipt is on its way to {{ order.customer_email }}.</p>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .order-status { margin: 8px 0 24px; }
+
+    .status {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: #eee;
+        font-size: 0.85em;
+    }
+
+    .status-paid { background: #d4edda; color: #155724; }
+    .status-pending { background: #fff3cd; color: #856404; }
+
+    .order-item {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .bead-list {
+        list-style: none;
+        padding: 0;
+        margin: 8px 0;
+    }
+
+    .bead-position {
+        display: inline-block;
+        width: 32px;
+        color: #888;
+    }
+
+    .order-item-total {
+        text-align: right;
+        font-weight: 600;
+        margin: 8px 0 0;
+    }
+
+    .order-total {
+        font-size: 1.2em;
+        text-align: right;
+    }
+</style>
+{% endblock %}

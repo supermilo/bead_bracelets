@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Completing Payment{% endblock %}
+
+{% block content %}
+<h1>Completing your payment&hellip;</h1>
+<p id="stripe-return-status">Please wait while we confirm your payment with Stripe.</p>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        const orderNumber = '{{ order.order_number }}';
+        const statusEl = document.getElementById('stripe-return-status');
+        const params = new URLSearchParams(window.location.search);
+        const redirectStatus = params.get('redirect_status');
+        const paymentIntentId = params.get('payment_intent');
+
+        function goToFailed() {
+            window.location = `/payment/${orderNumber}/failed/`;
+        }
+
+        if (redirectStatus !== 'succeeded' || !paymentIntentId) {
+            goToFailed();
+            return;
+        }
+
+        fetch(`/payment/${orderNumber}/stripe/confirm/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ payment_intent_id: paymentIntentId }),
+        })
+            .then((resp) => resp.json())
+            .then((data) => {
+                if (data.error) {
+                    statusEl.textContent = data.error;
+                    goToFailed();
+                    return;
+                }
+                window.location = data.redirect_url;
+            })
+            .catch(goToFailed);
+    })();
+</script>
+{% endblock %}

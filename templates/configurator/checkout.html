@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout{% endblock %}
+
+{% block content %}
+<h1>Checkout</h1>
+
+{% include "configurator/partials/build_tray.html" %}
+
+<form method="post" action="{% url 'configurator:finalize_bracelet' %}" class="checkout-form">
+    {% csrf_token %}
+    <label>
+        Name
+        <input type="text" name="customer_name" value="{{ customer_name }}" required>
+    </label>
+    <label>
+        Email
+        <input type="email" name="customer_email" value="{{ customer_email }}" required>
+    </label>
+    <label>
+        Phone (optional)
+        <input type="text" name="customer_phone" value="{{ customer_phone }}">
+    </label>
+    <button type="submit">Continue to payment</button>
+</form>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .bracelet-circle {
+        position: relative;
+        width: clamp(320px, calc(320px + var(--slots, 0) * 3px), 420px);
+        height: clamp(320px, calc(320px + var(--slots, 0) * 3px), 420px);
+        max-width: 100%;
+        margin: 16px auto;
+        border-radius: 50%;
+        border: 2px solid #bbb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        --radius: clamp(70px, calc(70px + var(--slots, 0) * 3px), 170px);
+    }
+
+    .bracelet-circle--empty {
+        border-style: dashed;
+        border-color: #ddd;
+    }
+
+    .tray-item {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 48px;
+        height: 48px;
+        margin-top: -24px;
+        margin-left: -24px;
+        transform: rotate(var(--angle)) translate(var(--radius)) rotate(calc(-1 * var(--angle)));
+        z-index: var(--z, 0);
+    }
+
+    .tray-item:hover,
+    .tray-item:focus-within {
+        z-index: 100;
+    }
+
+    .tray-item img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .tray-item.slot-2 { width: 72px; height: 72px; margin-top: -36px; margin-left: -36px; }
+    .tray-item.slot-3 { width: 96px; height: 96px; margin-top: -48px; margin-left: -48px; }
+    .tray-item.slot-4 { width: 120px; height: 120px; margin-top: -60px; margin-left: -60px; }
+
+    .tray-placeholder {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        margin-top: -10px;
+        margin-left: -10px;
+        border: 1.5px dashed #ccc;
+        border-radius: 50%;
+        transform: rotate(var(--angle)) translate(var(--radius)) rotate(calc(-1 * var(--angle)));
+    }
+
+    .tray-item-remove {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        width: 18px;
+        height: 18px;
+        line-height: 16px;
+        padding: 0;
+        border-radius: 50%;
+        border: none;
+        background: #333;
+        color: #fff;
+        font-size: 12px;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+
+    .tray-item:hover .tray-item-remove,
+    .tray-item:focus-within .tray-item-remove {
+        opacity: 1;
+    }
+
+    .tray-empty {
+        color: #888;
+        margin: 0;
+        text-align: center;
+        padding: 0 32px;
+    }
+
+    .tray-complete {
+        color: #155724;
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 4px;
+        padding: 8px 12px;
+        margin: 12px 0 0;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .tray-summary {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 12px;
+        font-weight: 600;
+    }
+
+    .tray-error {
+        color: #b00020;
+        margin: 0 0 12px;
+    }
+
+    .tray-checkout-link {
+        display: none;
+    }
+
+    .checkout-form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-width: 400px;
+        margin-top: 24px;
+    }
+
+    .checkout-form label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-weight: 600;
+    }
+
+    .checkout-form input {
+        padding: 8px;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .checkout-form button {
+        padding: 12px 16px;
+        font-size: 1rem;
+        margin-top: 8px;
+    }
+</style>
+{% endblock %}

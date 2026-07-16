@@ -1,14 +1,26 @@
 import logging
 import smtplib
 
+import requests
 import weasyprint
 from celery import shared_task
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+CURRENCY_API_URL = 'https://open.er-api.com/v6/latest/USD'
+
+# Matches this project's Stripe/PayPal/MercadoPago currency needs — MXN
+# specifically for MercadoPago's settlement currency.
+TARGET_CURRENCIES = {
+    'USD': '$',
+    'MXN': '$',
+    'EUR': '€',
+}
 
 
 @shared_task(
@@ -67,5 +79,46 @@ def send_order_confirmation_email(self, order_id):
     except Exception:
         logger.exception("Error sending confirmation email for order #%s", order_id)
         raise
+
+    return 0
+
+
+@shared_task(name='bracelet_builder.update_currency_rates')
+def update_currency_rates():
+    """Fetch today's USD-relative exchange rates and log one
+    CurrencyExchangeRate row per currency in TARGET_CURRENCIES, skipping any
+    currency that already has a row for today — see CurrencyExchangeRate's
+    docstring for why rows are appended rather than updated in place."""
+    from payment.models import CurrencyExchangeRate
+
+    try:
+        response = requests.get(CURRENCY_API_URL, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+    except requests.RequestException:
+        logger.exception("Failed to fetch currency rates from %s", CURRENCY_API_URL)
+        raise
+
+    rates = data.get('rates')
+    if not rates:
+        logger.warning("No 'rates' found in currency API response.")
+        return 0
+
+    today = timezone.localdate()
+    for currency_code, symbol in TARGET_CURRENCIES.items():
+        rate = rates.get(currency_code)
+        if rate is None:
+            logger.warning("Currency %s missing from API response.", currency_code)
+            continue
+
+        _, created = CurrencyExchangeRate.objects.get_or_create(
+            currency_code=currency_code,
+            created_at=today,
+            defaults={'symbol': symbol, 'rate': rate},
+        )
+        if created:
+            logger.info("New exchange rate for %s created: %s", currency_code, rate)
+        else:
+            logger.info("Exchange rate for %s already exists for today.", currency_code)
 
     return 0

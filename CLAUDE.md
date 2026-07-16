@@ -46,6 +46,8 @@ Most non-database settings are read via `python-decouple`'s `config()` in `brace
 
 `DATABASES` is the one deliberate exception — still hardcoded directly in `settings.py` (see Database section below), not read from `.env`. Don't "fix" this inconsistency without being asked; it's intentional, matching the style of the reference project this was scaffolded from.
 
+`ALLOWED_HOSTS` in `settings.py` also hardcodes an ngrok free-tier hostname alongside `localhost`/`127.0.0.1` — PayPal and MercadoPago webhooks need a publicly reachable callback URL, which `runserver` alone can't provide, so an ngrok tunnel is the dev-time stand-in. `CSRF_TRUSTED_ORIGINS` is read from `.env` (empty by default) for the same reason if the tunnel URL needs CSRF-trusted POSTs.
+
 ## Common commands
 
 All commands run from the repo root (where `manage.py` lives), via `pipenv run`:
@@ -86,6 +88,7 @@ If the DB name, user, host, or port are changed for a given environment, update 
 - **Queue**: `CELERY_TASK_DEFAULT_QUEUE = 'bracelet_builder'` is set explicitly in `settings.py` (not left at Celery's generic `"celery"` default), as defense in depth on top of the vhost isolation.
 - **Task naming**: tasks are namespaced (e.g. `payment/tasks.py`'s `send_order_confirmation_email` is registered as `'bracelet_builder.send_order_confirmation_email'`), same reasoning — belt and suspenders against a vhost/queue ever being misconfigured to be shared later.
 - Neither Redis nor RabbitMQ run in this dev sandbox by default — `.delay()` calls won't execute without a broker up. For testing task logic without infra, call the task's `.apply(args=[...])` (synchronous/eager) instead of `.delay()`.
+- **Beat schedule**: `CELERY_BEAT_SCHEDULE` in `settings.py` runs `update_currency_rates` (`payment/tasks.py`) daily at 03:00 UTC to log a `payment.CurrencyExchangeRate` row per tracked currency. This only fires if `celery -A bracelet_builder beat` is running alongside the worker — `CELERY_BEAT_SCHEDULE` being set does nothing on its own; forgetting the separate `beat` process is a silent no-op, not an error.
 
 ## Payment flow
 

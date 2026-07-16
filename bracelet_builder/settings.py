@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 
+from celery.schedules import crontab
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -161,13 +162,40 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
+# Runs once a day — update_currency_rates itself is idempotent per-day (see
+# CurrencyExchangeRate's unique_together), so a missed/duplicate beat tick
+# just no-ops instead of double-writing today's rate.
+CELERY_BEAT_SCHEDULE = {
+    'update-currency-rates-daily': {
+        'task': 'bracelet_builder.update_currency_rates',
+        'schedule': crontab(hour=3, minute=0),
+    },
+}
+
 
 # Email
 # https://docs.djangoproject.com/en/4.2/topics/email/
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'no-reply@bracelet-builder.local'
-ADMINS = [('Bracelet Builder Admin', 'admin@bracelet-builder.local')]
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='no-reply@bracelet-builder.local')
+
+# ADMINS is a comma-separated list of email addresses (e.g.
+# "admin@example.com,ops@example.com") — blank/unset by default so the
+# project still runs with no admin-notification recipients configured.
+# NOTE: this is a plain list of email strings, not Django's usual list of
+# (name, email) tuples. Fine while DEBUG=True (Django's built-in 500-error
+# mailer, the thing that actually requires the tuple shape, is inactive in
+# debug mode) — if DEBUG is ever set False and that mailer is needed, this
+# will need to go back to parsing "name:email" pairs into tuples.
+ADMINS = config(
+    'ADMINS', default='',
+    cast=lambda v: [email.strip() for email in v.split(',') if email.strip()],
+)
 
 
 # Site URL (used to build absolute URLs for gateway back-urls/webhooks)

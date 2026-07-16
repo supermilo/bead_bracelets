@@ -3,49 +3,157 @@
 {% block title %}Choose Payment Method{% endblock %}
 
 {% block content %}
-<h1>Choose a payment method</h1>
+<div class="payment-method">
+    <div class="payment-method__container">
+        <h1 class="payment-method__heading">Choose a payment method</h1>
 
-<p>Order {{ order.order_number }} — Total: <strong>${{ order.total }} {{ order.currency }}</strong></p>
+        <p class="payment-method__summary">Order {{ order.order_number }} — Total: <strong>${{ order.total }} {{ order.currency }}</strong></p>
 
-{% if error %}
-<p class="gateway-error">{{ error }}</p>
-{% endif %}
+        {% if error %}
+        <p class="gateway-error">{{ error }}</p>
+        {% endif %}
 
-<div class="gateway-options">
-    <form method="post" action="{% url 'payment:process_payment' order.order_number %}">
-        {% csrf_token %}
-        <input type="hidden" name="gateway" value="stripe">
-        <button type="submit">Pay with Card (Stripe)</button>
-    </form>
+        <div class="payment-method__options">
+            <form method="post" action="{% url 'payment:process_payment' order.order_number %}" class="payment-method__form">
+                {% csrf_token %}
+                <input type="hidden" name="gateway" value="stripe">
+                <button type="submit" class="payment-method__button payment-method__button--stripe">Pay with Card (Stripe)</button>
+            </form>
 
-    <form method="post" action="{% url 'payment:process_payment' order.order_number %}">
-        {% csrf_token %}
-        <input type="hidden" name="gateway" value="paypal">
-        <button type="submit">Pay with PayPal</button>
-    </form>
+            <form method="post" action="{% url 'payment:process_payment' order.order_number %}" class="payment-method__form">
+                {% csrf_token %}
+                <input type="hidden" name="gateway" value="paypal">
+                <button type="submit" class="payment-method__button payment-method__button--paypal">PayPal</button>
+            </form>
 
-    <form method="post" action="{% url 'payment:process_payment' order.order_number %}">
-        {% csrf_token %}
-        <input type="hidden" name="gateway" value="mercadopago">
-        <button type="submit">Pay with MercadoPago</button>
-    </form>
+            <form method="post" action="{% url 'payment:process_payment' order.order_number %}" class="payment-method__form">
+                {% csrf_token %}
+                <input type="hidden" name="gateway" value="mercadopago">
+                <button type="submit" class="payment-method__button payment-method__button--mercadopago">MercadoPago</button>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_head %}
 <style>
-    .gateway-error { color: #b00020; }
-
-    .gateway-options {
+    .payment-method {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        max-width: 320px;
+        align-items: center;
+        padding: 15px;
     }
 
-    .gateway-options button {
-        padding: 12px 16px;
+    .payment-method__container {
+        background-color: rgba(242, 231, 231, 0.884);
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        width: 90%;
+        max-width: 840px;
+        margin-top: 50px;
+    }
+
+    .payment-method__heading {
+        text-align: center;
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+        color: #333;
+        font-weight: bold;
+    }
+
+    .payment-method__summary {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .gateway-error {
+        color: #b00020;
+        text-align: center;
+    }
+
+    .payment-method__options {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .payment-method__form {
+        flex: 1 0 calc(33.333% - 1rem);
+        min-width: 120px;
+    }
+
+    .payment-method__button {
+        width: 100%;
+        height: 100px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .payment-method__button:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .payment-method__button--stripe {
+        background-color: #0094e7;
+    }
+
+    .payment-method__button--stripe:hover {
+        background-color: #615be0;
+    }
+
+    .payment-method__button--paypal {
+        background-color: #ffc245;
+        color: #003087;
+    }
+
+    .payment-method__button--paypal:hover {
+        background-color: #005ea6;
+        color: #fff;
+    }
+
+    .payment-method__button--mercadopago {
+        background-color: #4daee2;
+    }
+
+    .payment-method__button--mercadopago:hover {
+        background-color: #bce0f5;
+        color: #333;
+    }
+
+    @media (max-width: 768px) {
+        .payment-method__container {
+            width: 95%;
+            padding: 1.5rem;
+        }
+
+        .payment-method__form {
+            flex: 1 0 calc(60% - 0.70rem);
+        }
+
+        .payment-method__button {
+            height: 90px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .payment-method__form {
+            flex: 1 0 100%;
+        }
     }
 </style>
 {% endblock %}

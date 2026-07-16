@@ -1,65 +1,163 @@
-{% extends "base.html" %} {% block title %}Pay with PayPal{% endblock %} {%
-block content %}
-<h1>Pay with PayPal</h1>
+{% extends "base.html" %}
 
-<p>
-  Order {{ order.order_number }} — Total:
-  <strong>${{ order.total }} {{ order.currency }}</strong>
-</p>
+{% block title %}Pay with PayPal{% endblock %}
 
-<div id="paypal-button-container"></div>
-<p id="paypal-error" class="paypal-error"></p>
-{% endblock %} {% block extra_head %}
+{% block content %}
+<div class="paypal-checkout">
+    <div class="paypal-checkout__container">
+        <div class="paypal-checkout__form-col">
+            <div class="paypal-checkout__card">
+                <h1>Pay with PayPal</h1>
+
+                <div id="paypal-button-container"></div>
+                <p id="paypal-error" class="paypal-error"></p>
+            </div>
+        </div>
+
+        <div class="paypal-checkout__summary-col">
+            <div class="order-summary">
+                <h3>Your Order</h3>
+                <div class="order-summary__row">
+                    <span>Order</span>
+                    <span>{{ order.order_number }}</span>
+                </div>
+                <div class="order-summary__row order-summary__total">
+                    <span>Total</span>
+                    <span>${{ order.total }} {{ order.currency }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
 <script src="https://www.paypal.com/sdk/js?client-id={{ PAYPAL_CLIENT_ID }}&currency={{ order.currency }}"></script>
 <style>
-  .paypal-error {
-    color: #b00020;
-  }
-</style>
-{% endblock %} {% block extra_scripts %}
-<script>
-  (function () {
-    const orderNumber = "{{ order.order_number }}";
-    const errorEl = document.getElementById("paypal-error");
+    .paypal-checkout {
+        display: flex;
+        justify-content: center;
+        padding: 15px;
+    }
 
-    paypal
-      .Buttons({
-        createOrder: async function () {
-          const resp = await fetch(`/payment/${orderNumber}/paypal/create/`, {
-            method: "POST",
-            headers: { "X-CSRFToken": getCookie("csrftoken") },
-          });
-          const data = await resp.json();
-          if (data.error) {
-            errorEl.textContent = data.error;
-            throw new Error(data.error);
-          }
-          return data.id;
-        },
-        onApprove: async function (data) {
-          const resp = await fetch(`/payment/${orderNumber}/paypal/capture/`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": getCookie("csrftoken"),
-            },
-            body: JSON.stringify({ paypal_order_id: data.orderID }),
-          });
-          const captureData = await resp.json();
-          if (captureData.error) {
-            errorEl.textContent = captureData.error;
-            return;
-          }
-          window.location = captureData.redirect_url;
-        },
-        onError: function (err) {
-          errorEl.textContent = "PayPal error: " + err;
-        },
-        onCancel: function () {
-          errorEl.textContent = "Payment cancelled — you can try again.";
-        },
-      })
-      .render("#paypal-button-container");
-  })();
+    .paypal-checkout__container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        width: 90%;
+        max-width: 840px;
+        margin-top: 50px;
+    }
+
+    .paypal-checkout__form-col {
+        flex: 1 1 55%;
+        min-width: 280px;
+    }
+
+    .paypal-checkout__summary-col {
+        flex: 1 1 35%;
+        min-width: 240px;
+    }
+
+    .paypal-checkout__card {
+        background-color: rgba(242, 231, 231, 0.884);
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+    }
+
+    .paypal-checkout__card h1 {
+        margin-top: 0;
+        font-size: 1.5rem;
+    }
+
+    .paypal-error {
+        color: #b00020;
+        margin-top: 8px;
+    }
+
+    .order-summary {
+        background-color: #e8f4ff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .order-summary h3 {
+        margin-top: 0;
+    }
+
+    .order-summary__row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+    }
+
+    .order-summary__total {
+        font-weight: 700;
+        font-size: 1.1rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        margin-top: 8px;
+        padding-top: 12px;
+    }
+
+    @media (max-width: 768px) {
+        .paypal-checkout__container {
+            width: 95%;
+        }
+
+        .paypal-checkout__form-col,
+        .paypal-checkout__summary-col {
+            flex: 1 1 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        const orderNumber = '{{ order.order_number }}';
+        const errorEl = document.getElementById('paypal-error');
+
+        paypal
+            .Buttons({
+                createOrder: async function () {
+                    const resp = await fetch(`/payment/${orderNumber}/paypal/create/`, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                    });
+                    const data = await resp.json();
+                    if (data.error) {
+                        errorEl.textContent = data.error;
+                        throw new Error(data.error);
+                    }
+                    return data.id;
+                },
+                onApprove: async function (data) {
+                    const resp = await fetch(`/payment/${orderNumber}/paypal/capture/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                        body: JSON.stringify({ paypal_order_id: data.orderID }),
+                    });
+                    const captureData = await resp.json();
+                    if (captureData.error) {
+                        errorEl.textContent = captureData.error;
+                        return;
+                    }
+                    window.location = captureData.redirect_url;
+                },
+                onError: function (err) {
+                    errorEl.textContent = 'PayPal error: ' + err;
+                },
+                onCancel: function () {
+                    errorEl.textContent = 'Payment cancelled — you can try again.';
+                },
+            })
+            .render('#paypal-button-container');
+    })();
 </script>
 {% endblock %}

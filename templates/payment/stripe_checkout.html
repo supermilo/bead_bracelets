@@ -3,29 +3,168 @@
 {% block title %}Pay with Card{% endblock %}
 
 {% block content %}
-<h1>Pay with card</h1>
+<div class="stripe-checkout">
+    <div class="stripe-checkout__container">
+        <div class="stripe-checkout__form-col">
+            <div class="stripe-checkout__card">
+                <h1>Pay with card</h1>
 
-<p>Order {{ order.order_number }} — Total: <strong>${{ order.total }} {{ order.currency }}</strong></p>
+                <form id="stripe-payment-form">
+                    <div id="card-element"></div>
+                    <p id="stripe-error" class="stripe-error"></p>
+                    <button type="submit" id="stripe-submit" class="stripe-submit-btn">
+                        <span class="spinner hidden" id="stripe-spinner"></span>
+                        <span id="stripe-submit-text">Pay ${{ order.total }}</span>
+                    </button>
+                </form>
+            </div>
+        </div>
 
-<form id="stripe-payment-form">
-    <div id="card-element"></div>
-    <p id="stripe-error" class="stripe-error"></p>
-    <button type="submit" id="stripe-submit">Pay ${{ order.total }}</button>
-</form>
+        <div class="stripe-checkout__summary-col">
+            <div class="order-summary">
+                <h3>Your Order</h3>
+                <div class="order-summary__row">
+                    <span>Order</span>
+                    <span>{{ order.order_number }}</span>
+                </div>
+                <div class="order-summary__row order-summary__total">
+                    <span>Total</span>
+                    <span>${{ order.total }} {{ order.currency }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_head %}
 <script src="https://js.stripe.com/v3/"></script>
 <style>
+    .stripe-checkout {
+        display: flex;
+        justify-content: center;
+        padding: 15px;
+    }
+
+    .stripe-checkout__container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        width: 90%;
+        max-width: 840px;
+        margin-top: 50px;
+    }
+
+    .stripe-checkout__form-col {
+        flex: 1 1 55%;
+        min-width: 280px;
+    }
+
+    .stripe-checkout__summary-col {
+        flex: 1 1 35%;
+        min-width: 240px;
+    }
+
+    .stripe-checkout__card {
+        background-color: rgba(242, 231, 231, 0.884);
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+    }
+
+    .stripe-checkout__card h1 {
+        margin-top: 0;
+        font-size: 1.5rem;
+    }
+
     #card-element {
         padding: 12px;
         border: 1px solid #ccc;
         border-radius: 4px;
-        max-width: 400px;
+        background: #fff;
         margin-bottom: 12px;
     }
 
     .stripe-error { color: #b00020; }
+
+    .stripe-submit-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+        background-color: #0094e7;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+    .stripe-submit-btn:hover {
+        background-color: #615be0;
+    }
+
+    .stripe-submit-btn:disabled {
+        opacity: 0.7;
+        cursor: default;
+    }
+
+    .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: stripe-spin 0.6s linear infinite;
+    }
+
+    .spinner.hidden {
+        display: none;
+    }
+
+    @keyframes stripe-spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .order-summary {
+        background-color: #e8f4ff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .order-summary h3 {
+        margin-top: 0;
+    }
+
+    .order-summary__row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+    }
+
+    .order-summary__total {
+        font-weight: 700;
+        font-size: 1.1rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        margin-top: 8px;
+        padding-top: 12px;
+    }
+
+    @media (max-width: 768px) {
+        .stripe-checkout__container {
+            width: 95%;
+        }
+
+        .stripe-checkout__form-col,
+        .stripe-checkout__summary-col {
+            flex: 1 1 100%;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -34,17 +173,37 @@
     (function () {
         const stripe = Stripe('{{ STRIPE_PUBLIC_KEY }}');
         const elements = stripe.elements();
-        const cardElement = elements.create('card');
+        const style = {
+            base: {
+                color: '#000',
+                fontFamily: 'Arial, sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '16px',
+                '::placeholder': { color: '#32325d' },
+            },
+            invalid: {
+                fontFamily: 'Arial, sans-serif',
+                color: '#FF0000',
+                iconColor: '#fa755a',
+            },
+        };
+        const cardElement = elements.create('card', { style: style });
         cardElement.mount('#card-element');
 
         const orderNumber = '{{ order.order_number }}';
         const form = document.getElementById('stripe-payment-form');
         const errorEl = document.getElementById('stripe-error');
         const submitBtn = document.getElementById('stripe-submit');
+        const spinnerEl = document.getElementById('stripe-spinner');
+
+        function setLoading(isLoading) {
+            submitBtn.disabled = isLoading;
+            spinnerEl.classList.toggle('hidden', !isLoading);
+        }
 
         form.addEventListener('submit', async function (event) {
             event.preventDefault();
-            submitBtn.disabled = true;
+            setLoading(true);
             errorEl.textContent = '';
 
             try {
@@ -81,7 +240,7 @@
                 window.location = confirmData.redirect_url;
             } catch (err) {
                 errorEl.textContent = err.message;
-                submitBtn.disabled = false;
+                setLoading(false);
             }
         });
     })();

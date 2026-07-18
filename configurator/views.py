@@ -10,20 +10,71 @@ from django.views.decorators.http import require_POST
 
 from checkout.models import Order, OrderItem
 
-from .models import BraceletBase, BraceletConfiguration, BraceletConfigurationItem, BraceletItem, ItemCategory
+from .models import (
+    BraceletBase,
+    BraceletConfiguration,
+    BraceletConfigurationItem,
+    BraceletItem,
+    ItemCategory,
+    LeatherBraceletBase,
+)
+
+CORD_ELASTIC = 'elastic'
+CORD_LEATHER = 'leather'
+CORD_TYPES = {CORD_ELASTIC, CORD_LEATHER}
 
 
 def _get_session_data(request):
     session_data = request.session.get('bracelet_build')
     if session_data is None:
-        session_data = {'base_id': None, 'items': []}
+        session_data = {'cord_type': None, 'base_id': None, 'items': []}
         request.session['bracelet_build'] = session_data
     return session_data
 
 
+def _active_cord_type(session_data):
+    """Sessions created before cord-type selection existed have no
+    'cord_type' key at all - they only ever built elastic bracelets, so
+    treat a missing key the same as an explicit 'elastic' pick."""
+    return session_data.get('cord_type') or CORD_ELASTIC
+
+
+def _display_cord_type(session_data):
+    """Distinguishes 'nothing chosen yet' (None - the size selector should
+    show only the cord-type step) from 'a type is active' (elastic or
+    leather - the size selector should show that type's sizes too). Unlike
+    _active_cord_type, this can return None: a brand-new session has neither
+    an explicit cord_type nor a resolved base, and should render as step 1
+    only. A legacy session with a base_id but no cord_type key has already
+    resolved to elastic via _active_cord_type, so it's shown as such rather
+    than bounced back to step 1."""
+    cord_type = session_data.get('cord_type')
+    if cord_type in CORD_TYPES:
+        return cord_type
+    if session_data.get('base_id') is not None:
+        return CORD_ELASTIC
+    return None
+
+
+def _get_active_base(session_data):
+    base_id = session_data.get('base_id')
+    if base_id is None:
+        return None
+    model = LeatherBraceletBase if _active_cord_type(session_data) == CORD_LEATHER else BraceletBase
+    return model.objects.filter(pk=base_id).first()
+
+
 def _tray_context(session_data, error=None):
-    base = BraceletBase.objects.filter(pk=session_data.get('base_id')).first()
-    item_ids = session_data.get('items', [])
+    is_leather = _active_cord_type(session_data) == CORD_LEATHER
+    base = _get_active_base(session_data)
+    # A cord-type switch resets base_id but deliberately leaves items in the
+    # session (see select_cord_type) so they're not lost if the user picks a
+    # new size right after. Until they do, there's no active base to place
+    # them on or validate their slot count against, so render as empty here
+    # rather than showing beads with a nonsensical "N / 0 slots" summary -
+    # the real session list is untouched, so they reappear once a size is
+    # chosen again.
+    item_ids = session_data.get('items', []) if base is not None else []
     items_by_id = BraceletItem.objects.in_bulk(item_ids)
 
     tray_items = []
@@ -37,11 +88,17 @@ def _tray_context(session_data, error=None):
         used_slots += item.slot_width
         total_price += item.price
 
+    total_slots = 0
+    if base is not None:
+        total_slots = base.slot_count if is_leather else base.total_slots
+
     return {
-        'base': base,
+        'base': None if is_leather else base,
+        'leather_base': base if is_leather else None,
+        'cord_type': _display_cord_type(session_data),
         'tray_items': tray_items,
         'used_slots': used_slots,
-        'total_slots': base.total_slots if base else 0,
+        'total_slots': total_slots,
         'total_price': total_price,
         'error': error,
     }
@@ -51,8 +108,9 @@ def _tray_context(session_data, error=None):
 def index(request):
     categories = ItemCategory.objects.all()
     bases = BraceletBase.objects.order_by('total_slots')
+    leather_bases = LeatherBraceletBase.objects.order_by('size', 'name')
     session_data = _get_session_data(request)
-    context = {'categories': categories, 'bases': bases}
+    context = {'categories': categories, 'bases': bases, 'leather_bases': leather_bases}
     context.update(_tray_context(session_data))
     return render(request, 'configurator/bracelet_builder.html', context)
 
@@ -84,7 +142,10 @@ def add_bracelet_item(request):
             _tray_context(session_data, error='Choose a bracelet size before adding beads.'),
         )
 
-    base = get_object_or_404(BraceletBase, pk=session_data['base_id'])
+    is_leather = _active_cord_type(session_data) == CORD_LEATHER
+    base_model = LeatherBraceletBase if is_leather else BraceletBase
+    base = get_object_or_404(base_model, pk=session_data['base_id'])
+    base_total_slots = base.slot_count if is_leather else base.total_slots
 
     item = None
     try:
@@ -106,7 +167,7 @@ def add_bracelet_item(request):
             used_slots = sum(
                 slot_widths[i].slot_width for i in session_data['items'] if i in slot_widths
             )
-            if used_slots + item.slot_width > base.total_slots:
+            if used_slots + item.slot_width > base_total_slots:
                 error = 'Not enough room left on this bracelet.'
 
     if error is None:
@@ -152,13 +213,65 @@ def clear_bracelet(request):
     )
 
 
+def _render_size_selector_and_tray(request, session_data, error):
+    """Shared by select_cord_type and select_bracelet_base - both re-render
+    the size selector (primary target) plus the build tray (out-of-band
+    swap), the same two-widget response pattern select_bracelet_base always
+    used, now type-aware on top."""
+    bases = BraceletBase.objects.order_by('total_slots')
+    leather_bases = LeatherBraceletBase.objects.order_by('size', 'name')
+    tray_context = _tray_context(session_data)
+    selector_html = render_to_string(
+        'configurator/partials/size_selector.html',
+        {
+            'bases': bases,
+            'leather_bases': leather_bases,
+            'cord_type': tray_context['cord_type'],
+            'base': tray_context['base'],
+            'leather_base': tray_context['leather_base'],
+            'error': error,
+        },
+        request=request,
+    )
+    tray_context['oob'] = True
+    tray_html = render_to_string(
+        'configurator/partials/build_tray.html', tray_context, request=request
+    )
+    return HttpResponse(selector_html + tray_html)
+
+
+@require_POST
+def select_cord_type(request):
+    """First step of the build flow: pick elastic vs. leather before a size
+    can be chosen. Switching cord type invalidates any previously chosen
+    base_id (a leather pk is meaningless as a BraceletBase pk and vice
+    versa), so it's reset here - the subsequent select_bracelet_base call
+    re-validates tray capacity against whichever specific size gets picked
+    next, same as an ordinary size switch does today."""
+    session_data = _get_session_data(request)
+
+    cord_type = request.POST.get('cord_type')
+    error = None
+    if cord_type not in CORD_TYPES:
+        error = 'That bracelet type could not be found.'
+    else:
+        session_data['cord_type'] = cord_type
+        session_data['base_id'] = None
+        request.session['bracelet_build'] = session_data
+        request.session.modified = True
+
+    return _render_size_selector_and_tray(request, session_data, error)
+
+
 @require_POST
 def select_bracelet_base(request):
     session_data = _get_session_data(request)
+    is_leather = _active_cord_type(session_data) == CORD_LEATHER
+    base_model = LeatherBraceletBase if is_leather else BraceletBase
 
     new_base = None
     try:
-        new_base = BraceletBase.objects.filter(pk=int(request.POST.get('base_id'))).first()
+        new_base = base_model.objects.filter(pk=int(request.POST.get('base_id'))).first()
     except (TypeError, ValueError):
         new_base = None
 
@@ -170,7 +283,8 @@ def select_bracelet_base(request):
         if item_ids:
             slot_widths = BraceletItem.objects.in_bulk(item_ids)
             used_slots = sum(slot_widths[i].slot_width for i in item_ids if i in slot_widths)
-            if used_slots > new_base.total_slots:
+            new_total_slots = new_base.slot_count if is_leather else new_base.total_slots
+            if used_slots > new_total_slots:
                 error = 'Switching to this size would exceed its capacity — remove some items first.'
 
     if error is None:
@@ -178,18 +292,7 @@ def select_bracelet_base(request):
         request.session['bracelet_build'] = session_data
         request.session.modified = True
 
-    bases = BraceletBase.objects.order_by('total_slots')
-    tray_context = _tray_context(session_data)
-    selector_html = render_to_string(
-        'configurator/partials/size_selector.html',
-        {'bases': bases, 'base': tray_context['base'], 'error': error},
-        request=request,
-    )
-    tray_context['oob'] = True
-    tray_html = render_to_string(
-        'configurator/partials/build_tray.html', tray_context, request=request
-    )
-    return HttpResponse(selector_html + tray_html)
+    return _render_size_selector_and_tray(request, session_data, error)
 
 
 def checkout(request):
@@ -206,7 +309,9 @@ def checkout(request):
 def finalize_bracelet(request):
     session_data = _get_session_data(request)
     item_ids = session_data.get('items', [])
-    base = get_object_or_404(BraceletBase, pk=session_data.get('base_id'))
+    is_leather = _active_cord_type(session_data) == CORD_LEATHER
+    base_model = LeatherBraceletBase if is_leather else BraceletBase
+    base = get_object_or_404(base_model, pk=session_data.get('base_id'))
 
     customer_name = request.POST.get('customer_name', '').strip()
     customer_email = request.POST.get('customer_email', '').strip()
@@ -246,7 +351,10 @@ def finalize_bracelet(request):
 
     with transaction.atomic():
         configuration = BraceletConfiguration.objects.create(
-            base=base, session_key=request.session.session_key, is_finalized=True,
+            base=None if is_leather else base,
+            leather_base=base if is_leather else None,
+            session_key=request.session.session_key,
+            is_finalized=True,
         )
         BraceletConfigurationItem.objects.bulk_create([
             BraceletConfigurationItem(configuration=configuration, item_id=item_id, position=position)

@@ -61,17 +61,36 @@ class LeatherSize(models.TextChoices):
 
 class LeatherBraceletBase(models.Model):
     """A leather-cord-and-clasp bracelet type, structurally distinct from
-    BraceletBase (not a subclass): the beaded segment sits within a fixed
-    cord_image graphic rather than being rendered as a full CSS circle, and
-    slot_count is a constant that does not vary by size (unlike
-    BraceletBase.total_slots) - S/M/L still get separate rows here, same as
-    BraceletBase, because cord_image and the segment offset/width differ per
-    size even though slot_count doesn't.
+    BraceletBase (not a subclass): beads sit along a partial arc within a
+    fixed cord_image graphic (cord crosses at a clasp above the arc) rather
+    than being rendered as a full CSS circle, and slot_count is a constant
+    that does not vary by size (unlike BraceletBase.total_slots) - S/M/L
+    still get separate rows here, same as BraceletBase, because cord_image
+    and the arc geometry differ per size even though slot_count doesn't.
 
-    beaded_segment_offset_pct/width_pct are percentages of cord_image's width
-    (not fixed px) so they stay correct if cord_image is re-exported at a
-    different resolution per size - consistent with this project's convention
-    of percentage/relative CSS sizing over fixed pixel math elsewhere.
+    beaded_arc_start_deg/end_deg/bead_orbit_radius_pct describe that arc in
+    the same degree convention build_tray.html's rotate()/translate() bead
+    placement uses: 0deg = 3 o'clock, increasing counter-clockwise, so
+    90deg = 12 o'clock (where the clasp sits), 270deg = 6 o'clock (bottom
+    center of the arc). A symmetric bottom arc is centered on 270deg, e.g.
+    start=215/end=325 spans 55deg either side of dead-bottom.
+    bead_orbit_radius_pct is a % of cord_image's *shorter* dimension (its
+    height, for a typical wide bracelet-lying-flat photo) rather than width -
+    since the arc droops down from center, sizing the radius off the
+    narrower axis is what actually keeps beads inside the image at the
+    bottom of the sweep; sizing off width would overflow beneath a short,
+    wide image. Percentage-based (not fixed px) so it stays correct if
+    cord_image is re-exported at a different resolution per size, consistent
+    with this project's preference for relative over fixed-px CSS sizing.
+
+    The 215/325/27 defaults were verified against a real reference photo
+    (679x230px, ~3:1) by measuring actual rendered bead positions in a
+    browser, not just eyeballed - the originally-approved 200/340/32 looked
+    right on paper but its larger radius pushed beads below the image once
+    real beads were rendered, since radius is bottlenecked by the image's
+    short dimension (a bigger radius means more vertical droop at dead-
+    bottom, not just more horizontal spread). These are still just a
+    starting point for a differently-proportioned cord_image.
     """
 
     name = models.CharField(max_length=100)
@@ -79,15 +98,23 @@ class LeatherBraceletBase(models.Model):
     base_price = models.DecimalField(max_digits=8, decimal_places=2)
     slot_count = models.PositiveIntegerField()
     cord_image = models.ImageField(upload_to='leather_bracelet_bases/')
-    beaded_segment_offset_pct = models.DecimalField(
+    beaded_arc_start_deg = models.DecimalField(
         max_digits=5,
-        decimal_places=2,
-        help_text="Distance from cord_image's left edge to the start of the beaded segment, as a % of image width.",
+        decimal_places=1,
+        default=215,
+        help_text="Arc start angle: 0deg = 3 o'clock, increasing counter-clockwise (90deg = 12 o'clock, 270deg = 6 o'clock).",
     )
-    beaded_segment_width_pct = models.DecimalField(
+    beaded_arc_end_deg = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        default=325,
+        help_text="Arc end angle, same convention as beaded_arc_start_deg.",
+    )
+    bead_orbit_radius_pct = models.DecimalField(
         max_digits=5,
         decimal_places=2,
-        help_text="Width of the beaded segment within cord_image, as a % of image width.",
+        default=27,
+        help_text="Bead orbit radius as a % of cord_image's shorter dimension (its height, typically).",
     )
 
     class Meta:
@@ -95,6 +122,14 @@ class LeatherBraceletBase(models.Model):
 
     def __str__(self):
         return f'{self.name} ({self.get_size_display()})'
+
+    @property
+    def arc_span_deg(self):
+        """Django templates can't subtract two variables inline, and
+        build_tray.html needs this span as a single number to feed
+        {% widthratio %}'s max_width argument - see the template for how
+        the per-bead angle is assembled from this."""
+        return self.beaded_arc_end_deg - self.beaded_arc_start_deg
 
 
 class BraceletConfiguration(models.Model):

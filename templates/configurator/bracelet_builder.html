@@ -231,28 +231,13 @@
        letting the <img> determine the box via height:auto as before. Since
        --radius is a live percentage of the container's own box, it (like
        the circle's fixed-px --radius) still needs the same media-query
-       breakpoint treatment below for the fixed-px bead thumbnail sizes.
-
-       Unlike the circle, --radius here can't grow much to fit more beads -
-       bead_orbit_radius_pct is bottlenecked by the cord image's short
-       dimension (grow it much and beads droop below the image at the
-       bottom of the arc), and it's an admin-tuned per-row value anyway, not
-       something to auto-scale out from under them. So --bead-size shrinks
-       with capacity instead (slot_count, same stability precedent as the
-       circle's --slots - it doesn't reflow as beads are added/removed
-       mid-session) - the lever leather actually has room to use. This
-       reduces but doesn't eliminate overlap at high slot counts; a
-       real arc this short can't fit many fully-separated, legible beads.
-       leather-placeholder intentionally does NOT scale with --bead-size,
-       matching .tray-placeholder's own fixed-size precedent on the circle
-       above - it's a capacity hint, not a preview of actual bead size. */
+       breakpoint treatment below for the fixed-px bead thumbnail sizes. */
     .leather-canvas {
         position: relative;
         width: 100%;
         max-width: 630px;
         margin: 16px auto;
         container-type: size;
-        --bead-size: clamp(36px, calc(88px - var(--slot-count, 1) * 6px), 72px);
     }
 
     .leather-cord-image {
@@ -267,14 +252,15 @@
         opacity: 0.6;
     }
 
-    .leather-bead {
+    .leather-bead,
+    .leather-placeholder {
         position: absolute;
         top: 50%;
         left: 50%;
-        width: var(--bead-size);
-        height: var(--bead-size);
-        margin-top: calc(var(--bead-size) / -2);
-        margin-left: calc(var(--bead-size) / -2);
+        width: 72px;
+        height: 72px;
+        margin-top: -36px;
+        margin-left: -36px;
         transform: rotate(calc(-1 * var(--angle))) translate(var(--radius)) rotate(var(--angle));
         z-index: var(--z, 0);
     }
@@ -292,9 +278,9 @@
         border-radius: 50%;
     }
 
-    .leather-bead.slot-2 { width: calc(var(--bead-size) * 1.5); height: calc(var(--bead-size) * 1.5); margin-top: calc(var(--bead-size) * -0.75); margin-left: calc(var(--bead-size) * -0.75); }
-    .leather-bead.slot-3 { width: calc(var(--bead-size) * 2); height: calc(var(--bead-size) * 2); margin-top: calc(var(--bead-size) * -1); margin-left: calc(var(--bead-size) * -1); }
-    .leather-bead.slot-4 { width: calc(var(--bead-size) * 2.5); height: calc(var(--bead-size) * 2.5); margin-top: calc(var(--bead-size) * -1.25); margin-left: calc(var(--bead-size) * -1.25); }
+    .leather-bead.slot-2 { width: 108px; height: 108px; margin-top: -54px; margin-left: -54px; }
+    .leather-bead.slot-3 { width: 144px; height: 144px; margin-top: -72px; margin-left: -72px; }
+    .leather-bead.slot-4 { width: 180px; height: 180px; margin-top: -90px; margin-left: -90px; }
 
     .leather-bead:hover .tray-item-remove,
     .leather-bead:focus-within .tray-item-remove {
@@ -302,14 +288,10 @@
     }
 
     .leather-placeholder {
-        position: absolute;
-        top: 50%;
-        left: 50%;
         width: 30px;
         height: 30px;
         margin-top: -15px;
         margin-left: -15px;
-        transform: rotate(calc(-1 * var(--angle))) translate(var(--radius)) rotate(var(--angle));
         border: 1.5px dashed #ccc;
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.6);
@@ -365,16 +347,17 @@
             font-size: 12px;
         }
 
-        .leather-canvas {
-            --bead-size: clamp(24px, calc(59px - var(--slot-count, 1) * 4px), 48px);
+        .leather-bead,
+        .leather-placeholder {
+            width: 48px;
+            height: 48px;
+            margin-top: -24px;
+            margin-left: -24px;
         }
 
-        .leather-placeholder {
-            width: 20px;
-            height: 20px;
-            margin-top: -10px;
-            margin-left: -10px;
-        }
+        .leather-bead.slot-2 { width: 72px; height: 72px; margin-top: -36px; margin-left: -36px; }
+        .leather-bead.slot-3 { width: 96px; height: 96px; margin-top: -48px; margin-left: -48px; }
+        .leather-bead.slot-4 { width: 120px; height: 120px; margin-top: -60px; margin-left: -60px; }
     }
 
     .tray-empty {

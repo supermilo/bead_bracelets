@@ -217,34 +217,23 @@
         opacity: 1;
     }
 
-    /* Leather canvas: beads sit on a partial arc (cord crosses at a clasp
-       above it) using the exact same rotate()/translate()/rotate() bead-
-       placement technique as the circle above, just with the outer/inner
-       rotate signs flipped (see build_tray.html/models.py for the degree
-       convention this implies) and --radius scaled from cord_image's own
-       size via a container query unit (cqmin - 1% of whichever of the
-       canvas's width/height is smaller) instead of the circle's fixed-px
-       clamp(). cqmin needs `container-type: size`, which in turn needs an
-       explicit size on the container since size-contained elements can't
-       size themselves from their children - hence the inline aspect-ratio
-       set from the real uploaded image's own dimensions, rather than
-       letting the <img> determine the box via height:auto as before. Since
-       --radius is a live percentage of the container's own box, it (like
-       the circle's fixed-px --radius) still needs the same media-query
-       breakpoint treatment below for the fixed-px bead thumbnail sizes. */
+    /* Leather canvas: a linear layout (image + horizontal bead segment),
+       structurally different from the circle above - beads sit at --left--
+       percentages of the cord image's own width rather than at a fixed-px
+       --radius around a center point, so (unlike the circle) no media-query
+       repositioning is needed to keep beads inside the image as it shrinks;
+       only the fixed-px bead thumbnail sizes still need a breakpoint. */
     .leather-canvas {
         position: relative;
         width: 100%;
         max-width: 630px;
         margin: 16px auto;
-        container-type: size;
     }
 
     .leather-cord-image {
         display: block;
         width: 100%;
-        height: 100%;
-        object-fit: cover;
+        height: auto;
         border-radius: 4px;
     }
 
@@ -252,16 +241,19 @@
         opacity: 0.6;
     }
 
+    .leather-segment {
+        position: absolute;
+        top: 0;
+        height: 100%;
+    }
+
     .leather-bead,
     .leather-placeholder {
         position: absolute;
         top: 50%;
-        left: 50%;
         width: 72px;
         height: 72px;
-        margin-top: -36px;
-        margin-left: -36px;
-        transform: rotate(calc(-1 * var(--angle))) translate(var(--radius)) rotate(var(--angle));
+        transform: translate(-50%, -50%);
         z-index: var(--z, 0);
     }
 
@@ -278,9 +270,9 @@
         border-radius: 50%;
     }
 
-    .leather-bead.slot-2 { width: 108px; height: 108px; margin-top: -54px; margin-left: -54px; }
-    .leather-bead.slot-3 { width: 144px; height: 144px; margin-top: -72px; margin-left: -72px; }
-    .leather-bead.slot-4 { width: 180px; height: 180px; margin-top: -90px; margin-left: -90px; }
+    .leather-bead.slot-2 { width: 108px; height: 108px; }
+    .leather-bead.slot-3 { width: 144px; height: 144px; }
+    .leather-bead.slot-4 { width: 180px; height: 180px; }
 
     .leather-bead:hover .tray-item-remove,
     .leather-bead:focus-within .tray-item-remove {
@@ -290,8 +282,6 @@
     .leather-placeholder {
         width: 30px;
         height: 30px;
-        margin-top: -15px;
-        margin-left: -15px;
         border: 1.5px dashed #ccc;
         border-radius: 50%;
         background: rgba(255, 255, 255, 0.6);
@@ -351,13 +341,11 @@
         .leather-placeholder {
             width: 48px;
             height: 48px;
-            margin-top: -24px;
-            margin-left: -24px;
         }
 
-        .leather-bead.slot-2 { width: 72px; height: 72px; margin-top: -36px; margin-left: -36px; }
-        .leather-bead.slot-3 { width: 96px; height: 96px; margin-top: -48px; margin-left: -48px; }
-        .leather-bead.slot-4 { width: 120px; height: 120px; margin-top: -60px; margin-left: -60px; }
+        .leather-bead.slot-2 { width: 72px; height: 72px; }
+        .leather-bead.slot-3 { width: 96px; height: 96px; }
+        .leather-bead.slot-4 { width: 120px; height: 120px; }
     }
 
     .tray-empty {

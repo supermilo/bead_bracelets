@@ -62,9 +62,33 @@ class BraceletBaseAdmin(admin.ModelAdmin):
 
 @admin.register(LeatherBraceletBase)
 class LeatherBraceletBaseAdmin(admin.ModelAdmin):
-    list_display = ('name', 'size', 'base_price', 'slot_count')
+    list_display = ('thumbnail', 'name', 'size', 'base_price', 'slot_count')
+    list_display_links = ('thumbnail', 'name')
     list_filter = ('size',)
     search_fields = ('name',)
+    readonly_fields = ('image_preview',)
+    fields = (
+        'name', 'size', 'base_price', 'slot_count', 'cord_image', 'image_preview',
+        'beaded_arc_start_deg', 'beaded_arc_end_deg', 'bead_orbit_radius_pct',
+    )
+
+    @admin.display(description='Preview')
+    def thumbnail(self, obj):
+        if obj.cord_image:
+            return format_html(
+                '<img src="{}" style="height:40px;width:40px;object-fit:cover;border-radius:4px;" />',
+                obj.cord_image.url,
+            )
+        return ''
+
+    @admin.display(description='Preview')
+    def image_preview(self, obj):
+        if obj.cord_image:
+            return format_html(
+                '<img src="{}" style="max-height:200px;max-width:200px;object-fit:contain;" />',
+                obj.cord_image.url,
+            )
+        return '(no image)'
 
 
 class BraceletConfigurationItemInline(admin.TabularInline):

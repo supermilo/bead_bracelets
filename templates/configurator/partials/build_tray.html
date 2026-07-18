@@ -6,7 +6,7 @@
     {% if leather_base %}
     <div
         class="leather-canvas{% if not tray_items %} leather-canvas--empty{% endif %}"
-        style="aspect-ratio: {{ leather_base.cord_image.width }} / {{ leather_base.cord_image.height }}; --radius: calc({{ leather_base.bead_orbit_radius_pct }} * 1cqmin);"
+        style="aspect-ratio: {{ leather_base.cord_image.width }} / {{ leather_base.cord_image.height }}; --radius: calc({{ leather_base.bead_orbit_radius_pct }} * 1cqmin); --slot-count: {{ leather_base.slot_count }};"
     >
         <img class="leather-cord-image" src="{{ leather_base.cord_image.url }}" alt="{{ leather_base.name }} cord">
         {% with total=tray_items|length %}

@@ -138,6 +138,21 @@ def remove_bracelet_item(request):
 
 
 @require_POST
+def clear_bracelet(request):
+    """Empty the tray's item list, keeping the chosen base/size intact —
+    clearing beads and switching size are different intents, and forcing a
+    re-pick of size after a clear would just be an extra step for no reason."""
+    session_data = _get_session_data(request)
+    session_data['items'] = []
+    request.session['bracelet_build'] = session_data
+    request.session.modified = True
+
+    return render(
+        request, 'configurator/partials/build_tray.html', _tray_context(session_data)
+    )
+
+
+@require_POST
 def select_bracelet_base(request):
     session_data = _get_session_data(request)
 

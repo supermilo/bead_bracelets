@@ -128,8 +128,8 @@
 
     .bracelet-circle {
         position: relative;
-        width: clamp(320px, calc(320px + var(--slots, 0) * 3px), 420px);
-        height: clamp(320px, calc(320px + var(--slots, 0) * 3px), 420px);
+        width: clamp(480px, calc(480px + var(--slots, 0) * 5px), 630px);
+        height: clamp(480px, calc(480px + var(--slots, 0) * 5px), 630px);
         max-width: 100%;
         margin: 16px auto;
         border-radius: 50%;
@@ -137,7 +137,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        --radius: clamp(70px, calc(70px + var(--slots, 0) * 3px), 170px);
+        --radius: clamp(105px, calc(105px + var(--slots, 0) * 5px), 255px);
     }
 
     .bracelet-circle--empty {
@@ -149,10 +149,10 @@
         position: absolute;
         top: 50%;
         left: 50%;
-        width: 48px;
-        height: 48px;
-        margin-top: -24px;
-        margin-left: -24px;
+        width: 72px;
+        height: 72px;
+        margin-top: -36px;
+        margin-left: -36px;
         transform: rotate(var(--angle)) translate(var(--radius)) rotate(calc(-1 * var(--angle)));
         z-index: var(--z, 0);
     }
@@ -170,18 +170,18 @@
         border-radius: 50%;
     }
 
-    .tray-item.slot-2 { width: 72px; height: 72px; margin-top: -36px; margin-left: -36px; }
-    .tray-item.slot-3 { width: 96px; height: 96px; margin-top: -48px; margin-left: -48px; }
-    .tray-item.slot-4 { width: 120px; height: 120px; margin-top: -60px; margin-left: -60px; }
+    .tray-item.slot-2 { width: 108px; height: 108px; margin-top: -54px; margin-left: -54px; }
+    .tray-item.slot-3 { width: 144px; height: 144px; margin-top: -72px; margin-left: -72px; }
+    .tray-item.slot-4 { width: 180px; height: 180px; margin-top: -90px; margin-left: -90px; }
 
     .tray-placeholder {
         position: absolute;
         top: 50%;
         left: 50%;
-        width: 20px;
-        height: 20px;
-        margin-top: -10px;
-        margin-left: -10px;
+        width: 30px;
+        height: 30px;
+        margin-top: -15px;
+        margin-left: -15px;
         border: 1.5px dashed #ccc;
         border-radius: 50%;
         transform: rotate(var(--angle)) translate(var(--radius)) rotate(calc(-1 * var(--angle)));
@@ -189,17 +189,17 @@
 
     .tray-item-remove {
         position: absolute;
-        top: -4px;
-        right: -4px;
-        width: 18px;
-        height: 18px;
-        line-height: 16px;
+        top: -6px;
+        right: -6px;
+        width: 27px;
+        height: 27px;
+        line-height: 24px;
         padding: 0;
         border-radius: 50%;
         border: none;
         background: #333;
         color: #fff;
-        font-size: 12px;
+        font-size: 18px;
         cursor: pointer;
         opacity: 0;
         transition: opacity 0.15s ease;
@@ -208,6 +208,46 @@
     .tray-item:hover .tray-item-remove,
     .tray-item:focus-within .tray-item-remove {
         opacity: 1;
+    }
+
+    /* Below ~600px a 480px-minimum circle no longer fits comfortably, so
+       revert to the pre-enlargement sizing instead of relying on
+       max-width: 100% alone (which would shrink the circle's rendered box
+       without shrinking the fixed-px --radius/bead-size values driving the
+       translate() offsets, pushing beads outside the visible circle). */
+    @media (max-width: 600px) {
+        .bracelet-circle {
+            width: clamp(320px, calc(320px + var(--slots, 0) * 3px), 420px);
+            height: clamp(320px, calc(320px + var(--slots, 0) * 3px), 420px);
+            --radius: clamp(70px, calc(70px + var(--slots, 0) * 3px), 170px);
+        }
+
+        .tray-item {
+            width: 48px;
+            height: 48px;
+            margin-top: -24px;
+            margin-left: -24px;
+        }
+
+        .tray-item.slot-2 { width: 72px; height: 72px; margin-top: -36px; margin-left: -36px; }
+        .tray-item.slot-3 { width: 96px; height: 96px; margin-top: -48px; margin-left: -48px; }
+        .tray-item.slot-4 { width: 120px; height: 120px; margin-top: -60px; margin-left: -60px; }
+
+        .tray-placeholder {
+            width: 20px;
+            height: 20px;
+            margin-top: -10px;
+            margin-left: -10px;
+        }
+
+        .tray-item-remove {
+            top: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            line-height: 16px;
+            font-size: 12px;
+        }
     }
 
     .tray-empty {
@@ -245,6 +285,24 @@
         text-decoration: none;
         border-radius: 4px;
         font-weight: 600;
+    }
+
+    .tray-clear-btn {
+        display: block;
+        width: 100%;
+        margin-top: 8px;
+        padding: 10px 16px;
+        text-align: center;
+        background: #fff;
+        color: #b00020;
+        border: 1px solid #b00020;
+        border-radius: 4px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .tray-clear-btn:hover {
+        background: #fdecea;
     }
 </style>
 {% endblock %}

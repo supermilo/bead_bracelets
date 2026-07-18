@@ -45,6 +45,14 @@
     </div>
 
     {% if tray_items %}
+    <button
+        type="button"
+        class="tray-clear-btn"
+        hx-post="{% url 'configurator:clear_bracelet' %}"
+        hx-target="#build-tray"
+        hx-swap="outerHTML"
+        hx-confirm="Clear all beads from your bracelet? This can't be undone."
+    >Clear bracelet</button>
     <a class="tray-checkout-link" href="{% url 'configurator:checkout' %}">Checkout</a>
     {% endif %}
 </div>

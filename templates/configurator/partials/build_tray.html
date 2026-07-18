@@ -3,44 +3,6 @@
     <p class="tray-error">{{ error }}</p>
     {% endif %}
 
-    {% if leather_base %}
-    <div class="leather-canvas{% if not tray_items %} leather-canvas--empty{% endif %}">
-        <img class="leather-cord-image" src="{{ leather_base.cord_image.url }}" alt="{{ leather_base.name }} cord">
-        <div
-            class="leather-segment"
-            style="left: {{ leather_base.beaded_segment_offset_pct }}%; width: {{ leather_base.beaded_segment_width_pct }}%;"
-        >
-            {% with total=tray_items|length %}
-            {% for entry in tray_items %}
-            <div
-                class="leather-bead slot-{{ entry.item.slot_width }}"
-                style="left: {% widthratio forloop.counter0 total 100 %}%; --z: {{ forloop.counter0 }};"
-            >
-                <img src="{{ entry.item.image.url }}" alt="{{ entry.item.name }}">
-                <button
-                    type="button"
-                    class="tray-item-remove"
-                    hx-post="{% url 'configurator:remove_bracelet_item' %}"
-                    hx-vals='{"position": "{{ entry.position }}"}'
-                    hx-target="#build-tray"
-                    hx-swap="outerHTML"
-                    aria-label="Remove {{ entry.item.name }}"
-                >&times;</button>
-            </div>
-            {% empty %}
-            {% if total_slots %}
-            {% for _ in ""|ljust:total_slots %}
-            <div class="leather-placeholder" style="left: {% widthratio forloop.counter0 total_slots 100 %}%;"></div>
-            {% endfor %}
-            {% endif %}
-            {% endfor %}
-            {% endwith %}
-        </div>
-        {% if not tray_items %}
-        <p class="tray-empty">No items added yet.</p>
-        {% endif %}
-    </div>
-    {% else %}
     <div
         class="bracelet-circle{% if not tray_items %} bracelet-circle--empty{% endif %}"
         style="--slots: {{ total_slots|default:0 }};"
@@ -72,7 +34,6 @@
         {% endfor %}
         {% endwith %}
     </div>
-    {% endif %}
 
     {% if total_slots and used_slots == total_slots %}
     <p class="tray-complete">Your bracelet is complete!</p>

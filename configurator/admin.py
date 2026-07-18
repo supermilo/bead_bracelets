@@ -7,7 +7,6 @@ from .models import (
     BraceletConfigurationItem,
     BraceletItem,
     ItemCategory,
-    LeatherBraceletBase,
 )
 
 
@@ -57,13 +56,6 @@ class BraceletItemAdmin(admin.ModelAdmin):
 @admin.register(BraceletBase)
 class BraceletBaseAdmin(admin.ModelAdmin):
     list_display = ('name', 'total_slots', 'base_price')
-    search_fields = ('name',)
-
-
-@admin.register(LeatherBraceletBase)
-class LeatherBraceletBaseAdmin(admin.ModelAdmin):
-    list_display = ('name', 'size', 'base_price', 'slot_count')
-    list_filter = ('size',)
     search_fields = ('name',)
 
 

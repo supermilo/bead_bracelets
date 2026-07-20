@@ -3,6 +3,43 @@
     <p class="tray-error">{{ error }}</p>
     {% endif %}
 
+    {% if leather_base %}
+    <div
+        class="bracelet-circle leather-circle{% if not tray_items %} bracelet-circle--empty{% endif %}"
+        style="--slots: {{ total_slots|default:0 }};"
+    >
+        <div class="leather-clasp" style="--angle: 270deg;"></div>
+        {% with total=tray_items|length %}
+        {% for entry in tray_items %}
+        <div
+            class="leather-bead slot-{{ entry.item.slot_width }}"
+            style="--angle: calc({{ leather_base.arc_start_deg }}deg + {% widthratio forloop.counter0 total leather_base.arc_span_deg %}deg); --z: {{ forloop.counter0 }};"
+        >
+            <img src="{{ entry.item.image.url }}" alt="{{ entry.item.name }}">
+            <button
+                type="button"
+                class="tray-item-remove"
+                hx-post="{% url 'configurator:remove_bracelet_item' %}"
+                hx-vals='{"position": "{{ entry.position }}"}'
+                hx-target="#build-tray"
+                hx-swap="outerHTML"
+                aria-label="Remove {{ entry.item.name }}"
+            >&times;</button>
+        </div>
+        {% empty %}
+        {% if total_slots %}
+        {% for _ in ""|ljust:total_slots %}
+        <div
+            class="leather-placeholder"
+            style="--angle: calc({{ leather_base.arc_start_deg }}deg + {% widthratio forloop.counter0 total_slots leather_base.arc_span_deg %}deg);"
+        ></div>
+        {% endfor %}
+        {% endif %}
+        <p class="tray-empty">No items added yet.</p>
+        {% endfor %}
+        {% endwith %}
+    </div>
+    {% else %}
     <div
         class="bracelet-circle{% if not tray_items %} bracelet-circle--empty{% endif %}"
         style="--slots: {{ total_slots|default:0 }};"
@@ -34,6 +71,7 @@
         {% endfor %}
         {% endwith %}
     </div>
+    {% endif %}
 
     {% if total_slots and used_slots == total_slots %}
     <p class="tray-complete">Your bracelet is complete!</p>

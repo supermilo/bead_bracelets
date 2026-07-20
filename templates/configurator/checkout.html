@@ -111,6 +111,81 @@
         opacity: 1;
     }
 
+    /* Leather circle: literally the same .bracelet-circle box/--radius
+       above (shared classname, not a duplicated formula) - only the border
+       color changes (cord look) and beads are constrained to a sub-arc
+       instead of the full 360, plus a clasp marker at the bottom. --angle
+       for leather beads/placeholder/clasp is defined in the opposite sense
+       from .tray-item's (0deg=3 o'clock, increasing *counter*-clockwise,
+       so 90deg=12 o'clock/top, 270deg=6 o'clock/bottom - see
+       LeatherBraceletBase.ARC_CENTER_DEG's docstring) - hence the outer/
+       inner rotate() signs below are flipped from .tray-item/.tray-placeholder,
+       even though it's the same rotate()/translate()/rotate() technique and
+       the same --radius value. */
+    .leather-circle {
+        border-color: #6b4a2f;
+    }
+
+    .leather-bead {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 72px;
+        height: 72px;
+        margin-top: -36px;
+        margin-left: -36px;
+        transform: rotate(calc(-1 * var(--angle))) translate(var(--radius)) rotate(var(--angle));
+        z-index: var(--z, 0);
+    }
+
+    .leather-bead:hover,
+    .leather-bead:focus-within {
+        z-index: 100;
+    }
+
+    .leather-bead img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+    .leather-bead.slot-2 { width: 108px; height: 108px; margin-top: -54px; margin-left: -54px; }
+    .leather-bead.slot-3 { width: 144px; height: 144px; margin-top: -72px; margin-left: -72px; }
+    .leather-bead.slot-4 { width: 180px; height: 180px; margin-top: -90px; margin-left: -90px; }
+
+    .leather-bead:hover .tray-item-remove,
+    .leather-bead:focus-within .tray-item-remove {
+        opacity: 1;
+    }
+
+    .leather-placeholder {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 30px;
+        height: 30px;
+        margin-top: -15px;
+        margin-left: -15px;
+        border: 1.5px dashed #ccc;
+        border-radius: 50%;
+        transform: rotate(calc(-1 * var(--angle))) translate(var(--radius)) rotate(var(--angle));
+    }
+
+    .leather-clasp {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 26px;
+        height: 15px;
+        margin-top: -7.5px;
+        margin-left: -13px;
+        background: #3a3a3a;
+        border-radius: 4px;
+        transform: rotate(calc(-1 * var(--angle))) translate(var(--radius)) rotate(var(--angle));
+    }
+
     /* Below ~600px a 480px-minimum circle no longer fits comfortably, so
        revert to the pre-enlargement sizing instead of relying on
        max-width: 100% alone (which would shrink the circle's rendered box
@@ -148,6 +223,31 @@
             height: 18px;
             line-height: 16px;
             font-size: 12px;
+        }
+
+        .leather-bead {
+            width: 48px;
+            height: 48px;
+            margin-top: -24px;
+            margin-left: -24px;
+        }
+
+        .leather-bead.slot-2 { width: 72px; height: 72px; margin-top: -36px; margin-left: -36px; }
+        .leather-bead.slot-3 { width: 96px; height: 96px; margin-top: -48px; margin-left: -48px; }
+        .leather-bead.slot-4 { width: 120px; height: 120px; margin-top: -60px; margin-left: -60px; }
+
+        .leather-placeholder {
+            width: 20px;
+            height: 20px;
+            margin-top: -10px;
+            margin-left: -10px;
+        }
+
+        .leather-clasp {
+            width: 18px;
+            height: 10px;
+            margin-top: -5px;
+            margin-left: -9px;
         }
     }
 

@@ -3,11 +3,47 @@
     <p class="size-selector-error">{{ error }}</p>
     {% endif %}
 
-    {% if not base %}
+    <div class="cord-type-options">
+        <button
+            type="button"
+            class="size-option{% if cord_type == 'elastic' %} size-option--selected{% endif %}"
+            hx-post="{% url 'configurator:select_cord_type' %}"
+            hx-vals='{"cord_type": "elastic"}'
+            hx-target="#size-selector"
+            hx-swap="outerHTML"
+        >Classic Bracelet (elastic / chain / cord)</button>
+        <button
+            type="button"
+            class="size-option{% if cord_type == 'leather' %} size-option--selected{% endif %}"
+            hx-post="{% url 'configurator:select_cord_type' %}"
+            hx-vals='{"cord_type": "leather"}'
+            hx-target="#size-selector"
+            hx-swap="outerHTML"
+        >Leather Cord Bracelet</button>
+    </div>
+
+    {% if not cord_type %}
+    <p class="size-selector-prompt">Choose a bracelet type to begin.</p>
+    {% else %}
+    {% if not base and not leather_base %}
     <p class="size-selector-prompt">Choose a bracelet size to begin.</p>
     {% endif %}
 
     <div class="size-options">
+        {% if cord_type == 'leather' %}
+        {% for option in leather_bases %}
+        <button
+            type="button"
+            class="size-option{% if leather_base and option.id == leather_base.id %} size-option--selected{% endif %}"
+            hx-post="{% url 'configurator:select_bracelet_base' %}"
+            hx-vals='{"base_id": "{{ option.id }}"}'
+            hx-target="#size-selector"
+            hx-swap="outerHTML"
+        >{{ option.name }} ({{ option.slot_count }} slots)</button>
+        {% empty %}
+        <p>No leather bracelet sizes available yet.</p>
+        {% endfor %}
+        {% else %}
         {% for option in bases %}
         <button
             type="button"
@@ -20,5 +56,7 @@
         {% empty %}
         <p>No bracelet sizes available yet.</p>
         {% endfor %}
+        {% endif %}
     </div>
+    {% endif %}
 </div>
